@@ -4,7 +4,7 @@
 `bcnotify` is a layer on top of [fsnotify.v1](http://github.com/go-fsnotify/fsnotify) to make it easier to work with. Includes recursive adding of directories and filtering events.
 
 ## Is it production ready?
-Probably not. It has not yet been used in production. However code coverage in the tests is very good.
+No. It has not yet been used in production and tests sometimes pass, sometimes fail for reasons I don't understand.
 
 ## How do I use it?
 `bcnotify` monitors file system events. You begin by calling `NewFileSystemWatcher()` to get a `FileSystemWatcher`. You will want to make sure you call the `Close` method on that watcher to clean up when you are finished with it.
