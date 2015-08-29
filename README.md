@@ -1,4 +1,4 @@
-[![Coverage](http://gocover.io/_badge/github.com/flowonyx/bcnotify)](http://gocover.io/github.com/flowonyx/bcnotify) [![GoDoc](https://godoc.org/flowonyx/bcnotify?status.svg)](https://godoc.org/gopkg.in/fsnotify.v1)
+[![Coverage](http://gocover.io/_badge/github.com/flowonyx/bcnotify)](http://gocover.io/github.com/flowonyx/bcnotify) [![GoDoc](https://godoc.org/flowonyx/bcnotify?status.svg)](https://godoc.org/flowonyx/bcnotify)
 
 # Layer on top of fsnotify
 `bcnotify` is a layer on top of [fsnotify.v1](http://github.com/go-fsnotify/fsnotify) to make it easier to work with. Includes recursive adding of directories and filtering events.
