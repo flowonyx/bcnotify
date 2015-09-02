@@ -187,7 +187,7 @@ func TestFileSystemWatcherAddFile(t *testing.T) {
 	select {
 	case <-done:
 		return
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		t.Fatal("Timed out")
 	}
 
@@ -241,8 +241,49 @@ func TestFileSystemWatcherAddFileOpFilter(t *testing.T) {
 	select {
 	case <-done:
 		return
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		t.Fatal("Timed out")
+	}
+
+}
+
+// Make sure that removing a file with RemoveFile works correctly
+func TestFileSystemWatcherRemoveFile(t *testing.T) {
+	// Setup the test directory
+	dir := makeTestDir(t)
+	defer os.RemoveAll(dir)
+
+	fw, _ := NewFileSystemWatcher()
+	defer fw.Close()
+
+	filename := filepath.Join(dir, "test.txt")
+
+	// Actually write the file
+	err := ioutil.WriteFile(filename, []byte("test"), 0700)
+	if err != nil {
+		t.Error(err)
+	}
+	err = fw.AddFile(filename, AllOps)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = fw.RemoveFile(filename)
+	if err != nil {
+		t.Error(err)
+	}
+
+	fw.NotifyEvent(func(event *Event, err error) {
+		t.Fatal("Should not have notified of event.")
+	})
+
+	// Write the file again
+	ioutil.WriteFile(filename, []byte("test"), 0700)
+
+	// Wait until the event is caught and tested or we time out.
+	select {
+	case <-time.Tick(100 * time.Millisecond):
+		t.Log("timed out, which we wanted")
 	}
 
 }
@@ -258,7 +299,7 @@ func TestFileSystemWatcherAddDirRecursive(t *testing.T) {
 
 	// Create a subdirectory for testing recursive adds
 	os.MkdirAll(filepath.Join(dir, "sub"), 0700)
-	// Filter on .txt files and Create events and do it recursively
+	// Filter on .txt files and do it recursively
 	err := fw.AddDir(dir, "*.txt", AllOps, true)
 	if err != nil {
 		t.Error(err)
@@ -296,8 +337,53 @@ func TestFileSystemWatcherAddDirRecursive(t *testing.T) {
 	select {
 	case <-done:
 		return
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		t.Fatal("Timed out")
+	}
+}
+
+// Make sure removing directories with recursion works
+func TestFileSystemWatcherRemoveDirRecursive(t *testing.T) {
+	// Setup the test directory
+	dir := makeTestDir(t)
+	defer os.RemoveAll(dir)
+
+	fw, _ := NewFileSystemWatcher()
+	defer fw.Close()
+
+	err := os.MkdirAll(filepath.Join(dir, "sub"), 0700)
+	if err != nil {
+		t.Error(err)
+	}
+	// Filter on .txt files and do it recursively
+	err = fw.AddDir(dir, "*.txt", AllOps, true)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = fw.RemoveDir(dir, true)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Setup the NotifyEvent function
+	fw.NotifyEvent(func(event *Event, err error) {
+		t.Fatal("event still fired")
+	})
+
+	filename := filepath.Join(dir, "sub", "testfile.txt")
+	// Actually write the file
+	ioutil.WriteFile(filename, []byte("test"), 0700)
+
+	filename = filepath.Join(dir, "testfile.txt")
+	ioutil.WriteFile(filename, []byte("test"), 0700)
+
+	// Wait until the event is caught and tested or we time out.
+	select {
+	case <-time.Tick(100 * time.Millisecond):
+		if !t.Failed() {
+			t.Log("Timed out, which is what we wanted")
+		}
 	}
 }
 
@@ -337,8 +423,55 @@ func TestFileSystemWatcherAddDirNotRecursive(t *testing.T) {
 	select {
 	case <-done:
 		t.Fatal("Should not have received notification for subdirectory")
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		return
+	}
+}
+
+// Make sure removing directories without recursion works
+func TestFileSystemWatcherRemoveDirNotRecursive(t *testing.T) {
+	// Setup the test directory
+	dir := makeTestDir(t)
+	defer os.RemoveAll(dir)
+
+	fw, _ := NewFileSystemWatcher()
+	defer fw.Close()
+
+	// Create a subdirectory for testing non-recursive removes
+	os.MkdirAll(filepath.Join(dir, "sub"), 0700)
+	// Filter on .txt files and do it non-recursively
+	err := fw.AddDir(dir, "*.txt", AllOps, true)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = fw.RemoveDir(dir, false)
+	if err != nil {
+		t.Error(err)
+	}
+
+	done := make(chan struct{})
+	// Setup the NotifyEvent function
+	fw.NotifyEvent(func(event *Event, err error) {
+		filename := filepath.Join(dir, "testfile.txt")
+		if event.Name == filename {
+			t.Fatal("event still fired")
+		}
+		close(done)
+	})
+
+	filename := filepath.Join(dir, "testfile.txt")
+	ioutil.WriteFile(filename, []byte("test"), 0700)
+
+	filename = filepath.Join(dir, "sub", "testfile.txt")
+	ioutil.WriteFile(filename, []byte("test"), 0700)
+
+	// Wait until the event is caught and tested or we time out.
+	select {
+	case <-done:
+		return
+	case <-time.Tick(100 * time.Millisecond):
+		t.Fatal("Timed out")
 	}
 }
 
@@ -383,7 +516,7 @@ func TestFileSystemWatcherWaitEvent(t *testing.T) {
 	select {
 	case <-done:
 		return
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		t.Fatal("Timed out")
 	}
 }
@@ -433,7 +566,7 @@ func TestFileSystemWatcherNotifyEvent(t *testing.T) {
 	select {
 	case <-done:
 		return
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		t.Fatal("Timed out")
 	}
 }
@@ -480,7 +613,7 @@ func TestFileSystemWatcherMultipleCreates(t *testing.T) {
 
 	// maxCount is the number of files to write to disk and the number of events
 	// we want to receive.
-	maxCount := 1000
+	maxCount := 100
 	wait.Add(maxCount)
 	for i := 0; i < maxCount; i++ {
 		go func(i int) {
@@ -504,7 +637,7 @@ func TestFileSystemWatcherMultipleCreates(t *testing.T) {
 	select {
 	case <-done:
 		return
-	case <-time.Tick(1 * time.Second):
+	case <-time.Tick(100 * time.Millisecond):
 		t.Fatal("Timed out")
 	}
 }

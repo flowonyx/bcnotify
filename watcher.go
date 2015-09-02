@@ -219,6 +219,39 @@ func (fw *FileSystemWatcher) AddFile(path string, ops Op) error {
 	return nil
 }
 
+// RemoveFile removes a file from being watched and returns and error if any.
+func (fw *FileSystemWatcher) RemoveFile(path string) error {
+	// Check if this is a directory and return an error if it is.
+	if isdir, err := isDir(path); err == nil && isdir {
+		return fmt.Errorf("Use RemoveDir instead for %s", path)
+	} else if err != nil {
+		return stackerr.Wrap(err)
+	}
+	// Remove the path from the internal fsnotify watcher.
+	err := fw.watcher.Remove(path)
+	if err != nil {
+		return stackerr.Wrap(err)
+	}
+	fw.watchPaths = removePath(fw.watchPaths, path)
+	return nil
+}
+
+func removePath(paths []watchPath, path string) []watchPath {
+	// Remove the path from watchPaths
+	index := 0
+	found := false
+	for index = 0; index < len(paths); index++ {
+		if paths[index].path == path {
+			found = true
+			break
+		}
+	}
+	if found {
+		paths = append(paths[0:index], paths[index+1:]...)
+	}
+	return paths
+}
+
 // addDir adds a directory path to watch with a filename pattern on which to
 // filter and an Op on which to filter events.
 func (fw *FileSystemWatcher) addDir(path, pattern string, ops Op) error {
@@ -257,6 +290,53 @@ func (fw *FileSystemWatcher) AddDir(path, pattern string, ops Op, recursive bool
 			if info.IsDir() {
 				// Subdirectories inherit the filename pattern and ops from the parent.
 				if e := fw.addDir(p, pattern, ops); err != nil {
+					return stackerr.Wrap(e)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// RemoveDir removes a directory from the watcher and returns error if any
+func (fw *FileSystemWatcher) removeDir(path string) error {
+	// First ensure that the given path really is a directory.
+	if isdir, err := isDir(path); err == nil && !isdir {
+		return fmt.Errorf("Use RemoveFile instead for %s", path)
+	} else if err != nil {
+		return stackerr.Wrap(err)
+	}
+	// Remove path from internal fsnotify watcher.
+	err := fw.watcher.Remove(path)
+	if err != nil {
+		return stackerr.Wrap(err)
+	}
+
+	// Add to watchPaths so we can find it later with its configuration.
+	fw.watchPaths = removePath(fw.watchPaths, path)
+
+	return nil
+}
+
+// RemoveDir removes a directory from being watched, returning an error if any.
+// It also allows recursive removal.
+func (fw *FileSystemWatcher) RemoveDir(path string, recursive bool) error {
+
+	// Remove the given path from being watched.
+	err := fw.removeDir(path)
+	if err != nil {
+		return stackerr.Wrap(err)
+	}
+
+	if recursive {
+		err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				if e := fw.removeDir(p); err != nil {
 					return stackerr.Wrap(e)
 				}
 			}
