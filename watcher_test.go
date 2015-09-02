@@ -158,15 +158,11 @@ func TestFileSystemWatcherAddFile(t *testing.T) {
 	}
 
 	done := make(chan struct{})
-	isdone := false
 	fw.NotifyEvent(func(event *Event, err error) {
-		if isdone {
-			return
-		}
+
 		// Make sure we send the done channel a signal at the end.
 		defer func() {
-			isdone = true
-			close(done)
+			done <- struct{}{}
 		}()
 
 		if err != nil {
@@ -218,7 +214,7 @@ func TestFileSystemWatcherAddFileOpFilter(t *testing.T) {
 	fw.NotifyEvent(func(event *Event, err error) {
 		// Make sure we send the done channel a signal at the end.
 		defer func() {
-			close(done)
+			done <- struct{}{}
 		}()
 
 		if err != nil {
@@ -230,7 +226,7 @@ func TestFileSystemWatcherAddFileOpFilter(t *testing.T) {
 		if event.Name != filename {
 			t.Fatalf("event does not have correct filename. Wanted %s got %s", filename, event.Name)
 		}
-		if event.Op != Chmod {
+		if event.Op&Chmod != Chmod {
 			t.Fatal("Got wrong event:", event.Op)
 		}
 	})
@@ -316,7 +312,7 @@ func TestFileSystemWatcherAddDirRecursive(t *testing.T) {
 		// Make sure we send the done channel a signal at the end.
 		defer func() {
 			isdone = true
-			close(done)
+			done <- struct{}{}
 		}()
 
 		if err != nil {
@@ -413,7 +409,7 @@ func TestFileSystemWatcherAddDirNotRecursive(t *testing.T) {
 			return
 		}
 		isdone = true
-		close(done)
+		done <- struct{}{}
 	})
 
 	// Actually write the file
@@ -457,7 +453,7 @@ func TestFileSystemWatcherRemoveDirNotRecursive(t *testing.T) {
 		if event.Name == filename {
 			t.Fatal("event still fired")
 		}
-		close(done)
+		done <- struct{}{}
 	})
 
 	filename := filepath.Join(dir, "testfile.txt")
@@ -495,7 +491,7 @@ func TestFileSystemWatcherWaitEvent(t *testing.T) {
 	go func() {
 		// Make sure we send the done channel a signal at the end.
 		defer func() {
-			close(done)
+			done <- struct{}{}
 		}()
 
 		event, err := fw.WaitEvent()
@@ -546,7 +542,7 @@ func TestFileSystemWatcherNotifyEvent(t *testing.T) {
 		// Make sure we send the done channel a signal at the end.
 		defer func() {
 			isdone = true
-			close(done)
+			done <- struct{}{}
 		}()
 
 		if err != nil {
@@ -631,7 +627,7 @@ func TestFileSystemWatcherMultipleCreates(t *testing.T) {
 		if c != int64(maxCount) {
 			t.Fatalf("Wanted %d events but got %d", maxCount, c)
 		}
-		close(done)
+		done <- struct{}{}
 	}()
 
 	select {
@@ -752,7 +748,7 @@ func TestOpFilterAllOps(t *testing.T) {
 	done := make(chan struct{})
 	go func() {
 		wait.Wait()
-		close(done)
+		done <- struct{}{}
 	}()
 
 	doFileOps(t, dir)
