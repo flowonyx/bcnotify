@@ -71,7 +71,7 @@ The `bcnotify.Event` that is returned is API compatible with `fsnotify.Event`.
 fw.NotifyEvent(func(event *bcnotify.Event, err error) {
   // Error handling...
 
-  if event.Op&bcnotify.Create != 0 {
+  if event.Op&bcnotify.Create == bcnotify.Create {
     // Handle create operation
   }
 })

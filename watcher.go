@@ -125,7 +125,7 @@ func (fw *FileSystemWatcher) filterByOp(path string, op Op) bool {
 	}
 	// This tests whether the given Op is included in the Op list
 	// (e.g. match Create against Create|Write)
-	if p.ops&op != 0 {
+	if p.ops&op == op {
 		return true
 	}
 	return false

@@ -582,31 +582,31 @@ func TestOpFilterAllOps(t *testing.T) {
 			t.Fatal("event should not be nil")
 		}
 
-		if event.Op&Create != 0 {
+		if event.Op&Create == Create {
 			if _, ok := ops[Create]; !ok {
 				return
 			}
 			delete(ops, Create)
 		}
-		if event.Op&Write != 0 {
+		if event.Op&Write == Write {
 			if _, ok := ops[Write]; !ok {
 				return
 			}
 			delete(ops, Write)
 		}
-		if event.Op&Chmod != 0 {
+		if event.Op&Chmod == Chmod {
 			if _, ok := ops[Chmod]; !ok {
 				return
 			}
 			delete(ops, Chmod)
 		}
-		if event.Op&Rename != 0 {
+		if event.Op&Rename == Rename {
 			if _, ok := ops[Rename]; !ok {
 				return
 			}
 			delete(ops, Rename)
 		}
-		if event.Op&Remove != 0 {
+		if event.Op&Remove == Remove {
 			if _, ok := ops[Remove]; !ok {
 				return
 			}
