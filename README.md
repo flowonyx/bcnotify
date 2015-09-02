@@ -4,7 +4,7 @@
 `bcnotify` is a layer on top of [fsnotify.v1](http://github.com/go-fsnotify/fsnotify) to make it easier to work with. Includes recursive adding of directories and filtering events.
 
 ## Is it production ready?
-No. It has not yet been used in production and tests sometimes pass, sometimes fail for reasons I don't understand.
+No. It has not yet been used in production and tests sometimes pass, sometimes fail for reasons I don't understand, although I believe the problem is with the test code, not the package code.
 
 ## How do I use it?
 `bcnotify` monitors file system events. You begin by calling `NewFileSystemWatcher()` to get a `FileSystemWatcher`. You will want to make sure you call the `Close` method on that watcher to clean up when you are finished with it.
@@ -71,7 +71,7 @@ The `bcnotify.Event` that is returned is API compatible with `fsnotify.Event`.
 fw.NotifyEvent(func(event *bcnotify.Event, err error) {
   // Error handling...
 
-  if event.Op&bcnotify.Create {
+  if event.Op&bcnotify.Create != 0 {
     // Handle create operation
   }
 })
